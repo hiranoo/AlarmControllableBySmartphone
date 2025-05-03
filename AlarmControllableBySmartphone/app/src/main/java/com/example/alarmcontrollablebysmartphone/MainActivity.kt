@@ -1,9 +1,18 @@
 package com.example.alarmcontrollablebysmartphone
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothSocket
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.OptIn
+import androidx.annotation.RequiresPermission
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -11,11 +20,24 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.media3.common.util.UnstableApi
 import com.example.alarmcontrollablebysmartphone.ui.theme.AlarmControllableBySmartphoneTheme
+import java.io.BufferedReader
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
+
+const val TAG = "BluetoothDebug"
+const val TARGET_DEVICE_NAME = "RNBT-C21F"
 
 class MainActivity : ComponentActivity() {
+    lateinit var bluetoothManager: BluetoothManager
+    lateinit var bluetoothAdapter: BluetoothAdapter
+    var bluetoothDevice: BluetoothDevice? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         enableEdgeToEdge()
         setContent {
             AlarmControllableBySmartphoneTheme {
