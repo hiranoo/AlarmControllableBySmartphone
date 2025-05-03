@@ -103,7 +103,7 @@ class MainActivity : ComponentActivity() {
                     bluetoothDevice = device
                     connectThread = ConnectThread(device)
                     connectThread?.start()
-                    Toast.makeText(this@MainActivity, "Bluetooth connection started", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, "Bluetooth connection is being established...", Toast.LENGTH_SHORT).show()
                     return
                 }
             }
