@@ -7,7 +7,10 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothSocket
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -19,18 +22,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerState
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,6 +47,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.text.SimpleDateFormat
+import java.time.LocalTime
 import java.util.Calendar
 import java.util.Locale
 
@@ -60,6 +60,7 @@ class MainActivity : ComponentActivity() {
     var bluetoothDevice: BluetoothDevice? = null
     var connectThread: ConnectThread? = null
     var connectedThread: ConnectedThread? = null
+    private val handler = Handler(Looper.getMainLooper())
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -73,7 +74,7 @@ class MainActivity : ComponentActivity() {
 
     @OptIn(UnstableApi::class)
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-    fun setupBluetooth() {
+    private fun setupBluetooth() {
         val permissions = arrayOf<String>(
             Manifest.permission.BLUETOOTH,
             Manifest.permission.BLUETOOTH_ADMIN,
@@ -97,6 +98,7 @@ class MainActivity : ComponentActivity() {
                     bluetoothDevice = device
                     connectThread = ConnectThread(device)
                     connectThread?.start()
+                    Toast.makeText(this@MainActivity, "Bluetooth connection started", Toast.LENGTH_SHORT).show()
                     return
                 }
             }
@@ -104,7 +106,10 @@ class MainActivity : ComponentActivity() {
     }
 
     fun manageMyConnectedSocket(socket: BluetoothSocket) {
-        connectedThread = ConnectedThread(socket)
+        Log.d(TAG, "manage my connect socket")
+        if (connectedThread == null) {
+            connectedThread = ConnectedThread(socket)
+        }
     }
 
     @SuppressLint("MissingPermission")
@@ -128,12 +133,11 @@ class MainActivity : ComponentActivity() {
         }
 
         // Closes the client socket and causes the thread to finish.
-        @OptIn(UnstableApi::class)
         fun cancel() {
             try {
                 mmSocket?.close()
             } catch (e: IOException) {
-                androidx.media3.common.util.Log.e(TAG, "Could not close the client socket", e)
+                Log.e(TAG, "Could not close the client socket", e)
             }
         }
     }
@@ -144,7 +148,6 @@ class MainActivity : ComponentActivity() {
         private val mmOutStream: OutputStream = mmSocket.outputStream
         private val mmBuffer: ByteArray = ByteArray(1024) // mmBuffer store for the stream
 
-        @OptIn(UnstableApi::class)
         override fun run() {
             val reader = BufferedReader(mmInStream.reader())
             var content: String
@@ -153,28 +156,26 @@ class MainActivity : ComponentActivity() {
             } finally {
                 reader.close()
             }
-            androidx.media3.common.util.Log.d(TAG, content)
+            Log.d(TAG, content)
         }
 
         // Call this from the main activity to send data to the remote device.
-        @OptIn(UnstableApi::class)
         fun write(bytes: ByteArray) {
             try {
-                androidx.media3.common.util.Log.d("abcdef", "start writing")
+                Log.d("abcdef", "start writing")
                 mmOutStream.write(bytes)
             } catch (e: IOException) {
-                androidx.media3.common.util.Log.e(TAG, "Error occurred when sending data", e)
+                Log.e(TAG, "Error occurred when sending data", e)
                 return
             }
         }
 
         // Call this method from the main activity to shut down the connection.
-        @OptIn(UnstableApi::class)
         fun cancel() {
             try {
                 mmSocket.close()
             } catch (e: IOException) {
-                androidx.media3.common.util.Log.e(TAG, "Could not close the connect socket", e)
+                Log.e(TAG, "Could not close the connect socket", e)
             }
         }
     }
@@ -201,6 +202,18 @@ class MainActivity : ComponentActivity() {
                 UIBody()
             }
         }
+    }
+
+    @kotlin.OptIn(ExperimentalMaterial3Api::class)
+    private fun sendTimeToArduino(time: TimePickerState) {
+        val alarmMinutes = MyTime(time.hour, time.minute).toMinutes()
+        val localTime = LocalTime.now()
+        val currentMinutes = MyTime(localTime.hour, localTime.minute).toMinutes()
+
+        connectedThread?.write(("Alarm,$alarmMinutes;").toByteArray())
+        handler.postDelayed({
+            connectedThread?.write(("Current,$currentMinutes;").toByteArray())
+        }, 1000)
     }
 
     @kotlin.OptIn(ExperimentalMaterial3Api::class)
@@ -252,7 +265,7 @@ class MainActivity : ComponentActivity() {
                         }
                         Button(
                             enabled = bluetoothDevice != null && selectedTime != null,
-                            onClick = { /* TODO */ },
+                            onClick = { sendTimeToArduino(selectedTime!!) },
                         ) {
                             Text("送信")
                         }
