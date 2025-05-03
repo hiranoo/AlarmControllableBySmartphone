@@ -158,6 +158,9 @@ class MainActivity : ComponentActivity() {
             var content: String
             try {
                 content = reader.readText()
+                handler.post({
+
+                })
             } finally {
                 reader.close()
             }
