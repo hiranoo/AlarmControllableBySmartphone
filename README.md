@@ -5,7 +5,10 @@ You can set the time you want and send it to another device via Bluetooth.
 ## How to use
 1. Enable Bluetooth on your android phone.
 2. Do pairing before using this app.
-3. Launch this app.
-4. Set time in this app.
-5. Send the time via Bluetooth
+3. Launch this app. It will crashe at the first launch because permissions not yet set, but no problem.
+4. Allow Bluetooth permissions on your phone after the crash.
+5. Relaunch this app, then you can use it.
+6. Set time in this app.
+7. Send the time via Bluetooth.
+
 
