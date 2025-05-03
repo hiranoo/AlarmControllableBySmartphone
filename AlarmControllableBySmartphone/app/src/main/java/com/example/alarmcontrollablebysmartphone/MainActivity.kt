@@ -95,7 +95,8 @@ class MainActivity : ComponentActivity() {
                 device.uuids.forEach { uuid ->
                     androidx.media3.common.util.Log.d(TAG, "uuid = %s".format(uuid.uuid))
                     bluetoothDevice = device
-                    // TODO
+                    connectThread = ConnectThread(device)
+                    connectThread?.start()
                     return
                 }
             }
