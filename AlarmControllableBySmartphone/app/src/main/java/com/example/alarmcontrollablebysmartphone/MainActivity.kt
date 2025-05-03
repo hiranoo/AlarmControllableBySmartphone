@@ -66,6 +66,7 @@ class MainActivity : ComponentActivity() {
     var connectThread: ConnectThread? = null
     var connectedThread: ConnectedThread? = null
     private val handler = Handler(Looper.getMainLooper())
+    var messageStatus: String? = null
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -157,11 +158,10 @@ class MainActivity : ComponentActivity() {
             val reader = BufferedReader(mmInStream.reader())
             var content: String
             try {
+                Log.d(TAG,"Now reading stream...")
                 content = reader.readText()
-                handler.post({
-
-                })
             } finally {
+                Log.d(TAG, "Closing reader")
                 reader.close()
             }
             Log.d(TAG, content)
@@ -170,7 +170,7 @@ class MainActivity : ComponentActivity() {
         // Call this from the main activity to send data to the remote device.
         fun write(bytes: ByteArray) {
             try {
-                Log.d("abcdef", "start writing")
+                Log.d(TAG, "start writing")
                 mmOutStream.write(bytes)
             } catch (e: IOException) {
                 Log.e(TAG, "Error occurred when sending data", e)
@@ -231,7 +231,11 @@ class MainActivity : ComponentActivity() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceEvenly
         ) {
-            Text("aaa")
+            if (messageStatus == null){
+                Text("No status")
+            } else {
+                Text(messageStatus!!)
+            }
             Button(
                 onClick = { requestStatusToArduino() }
             ) {
@@ -241,17 +245,18 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun requestStatusToArduino() {
-        connectedThread?.write(encodeMessage("Status", "").toByteArray())
-        handler.postDelayed({
-            connectedThread?.run()
-        }, 7000)
+        connectedThread?.write(encodeMessage("Status", "dummy").toByteArray())
+//        handler.postDelayed({
+//            Log.d(TAG,"start reading...")
+//            connectedThread?.start()
+//        }, 7000)
     }
 
     @kotlin.OptIn(ExperimentalMaterial3Api::class)
     private fun sendTimeToArduino(time: TimePickerState) {
-        val alarmMinutes = MyTime(time.hour, time.minute).toMinutes()
+        val alarmMinutes = MyTime(time.hour, time.minute).toSeconds()
         val localTime = LocalTime.now()
-        val currentMinutes = MyTime(localTime.hour, localTime.minute).toMinutes()
+        val currentMinutes = MyTime(localTime.hour, localTime.minute).toSeconds()
 
         connectedThread?.write(encodeMessage("Alarm", alarmMinutes.toString()).toByteArray())
         handler.postDelayed({
