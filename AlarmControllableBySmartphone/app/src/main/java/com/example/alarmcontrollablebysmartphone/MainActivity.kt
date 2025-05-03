@@ -16,11 +16,15 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.OptIn
 import androidx.annotation.RequiresPermission
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -37,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -184,6 +189,7 @@ class MainActivity : ComponentActivity() {
     @kotlin.OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun UIContent() {
+        var showArduinoStatus by remember { mutableStateOf(false) }
         AlarmControllableBySmartphoneTheme {
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
@@ -194,14 +200,48 @@ class MainActivity : ComponentActivity() {
                             titleContentColor = MaterialTheme.colorScheme.primary,
                         ),
                         title = {
-                            Text("Alarm with opening the shutter")
+                            Text(
+                                text = "Alarm with opening the shutter",
+                                modifier = Modifier.clickable {
+                                    showArduinoStatus = !showArduinoStatus
+                                }
+                            )
                         }
                     )
                 },
             ) {
-                UIBody()
+                if (showArduinoStatus) {
+                    ArduinoStatusView()
+                } else {
+                    AlarmView()
+                }
             }
         }
+    }
+
+    @Composable
+    fun ArduinoStatusView() {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Text("aaa")
+            Button(
+                onClick = { requestStatusToArduino() }
+            ) {
+                Text("Request status", fontSize = 30.sp)
+            }
+        }
+    }
+
+    private fun requestStatusToArduino() {
+        connectedThread?.write("Status,;".toByteArray())
+        handler.postDelayed({
+            connectedThread?.run()
+        }, 7000)
     }
 
     @kotlin.OptIn(ExperimentalMaterial3Api::class)
@@ -218,9 +258,8 @@ class MainActivity : ComponentActivity() {
 
     @kotlin.OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    fun UIBody() {
+    fun AlarmView() {
         var showMenu by remember { mutableStateOf(true) }
-        var showDialExample by remember { mutableStateOf(false) }
         var showDialWithDialogExample by remember { mutableStateOf(false) }
         var selectedTime: TimePickerState? by remember { mutableStateOf(null) }
         val formatter = remember { SimpleDateFormat("hh:mm a", Locale.getDefault()) }
@@ -271,6 +310,8 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
+            } else {
+
             }
 
             when {
