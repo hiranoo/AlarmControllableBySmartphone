@@ -37,7 +37,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        setupBluetooth()
         enableEdgeToEdge()
         setContent {
             AlarmControllableBySmartphoneTheme {
@@ -46,6 +46,37 @@ class MainActivity : ComponentActivity() {
                         name = "Android",
                         modifier = Modifier.padding(innerPadding)
                     )
+                }
+            }
+        }
+    }
+
+    @OptIn(UnstableApi::class)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    fun setupBluetooth() {
+        val permissions = arrayOf<String>(
+            Manifest.permission.BLUETOOTH,
+            Manifest.permission.BLUETOOTH_ADMIN,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.BLUETOOTH_SCAN,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+        requestPermissions(permissions, 100)
+
+        bluetoothManager = getSystemService(BluetoothManager::class.java)
+        bluetoothAdapter = bluetoothManager.adapter
+        val pairedDevices: Set<BluetoothDevice>? = bluetoothAdapter.bondedDevices
+        pairedDevices?.forEach { device ->
+            val deviceName = device.name
+            val deviceHardwareAddress = device.address // MAC address
+            if (deviceName == TARGET_DEVICE_NAME) {
+                androidx.media3.common.util.Log.d(TAG, "name = %s, MAC <%s>".format(deviceName, deviceHardwareAddress))
+                device.uuids.forEach { uuid ->
+                    androidx.media3.common.util.Log.d(TAG, "uuid = %s".format(uuid.uuid))
+                    bluetoothDevice = device
+                    // TODO
+                    return
                 }
             }
         }
