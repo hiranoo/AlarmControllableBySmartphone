@@ -11,4 +11,9 @@ You can set the time you want and send it to another device via Bluetooth.
 6. Set time in this app.
 7. Send the time via Bluetooth.
 
+## Caution
+Bluetooth connection will be established as soon as launch of the app.
+Bluetooth connection can be failed sometimes, when the app crashes suddenly.
+Then, you should relaunch the app until the connection is established.
+
 
