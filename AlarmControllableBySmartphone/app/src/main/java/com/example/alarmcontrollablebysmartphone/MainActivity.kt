@@ -13,23 +13,43 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.OptIn
 import androidx.annotation.RequiresPermission
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerState
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.media3.common.util.UnstableApi
 import com.example.alarmcontrollablebysmartphone.ui.theme.AlarmControllableBySmartphoneTheme
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 const val TAG = "BluetoothDebug"
 const val TARGET_DEVICE_NAME = "RNBT-C21F"
@@ -182,8 +202,78 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    @kotlin.OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun UIBody() {
+        var showMenu by remember { mutableStateOf(true) }
+        var showDialExample by remember { mutableStateOf(false) }
+        var showDialWithDialogExample by remember { mutableStateOf(false) }
+        var selectedTime: TimePickerState? by remember { mutableStateOf(null) }
+        val formatter = remember { SimpleDateFormat("hh:mm a", Locale.getDefault()) }
+
+        Box(
+            Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            if (showMenu) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    if (selectedTime != null) {
+                        val cal = Calendar.getInstance()
+                        cal.set(Calendar.HOUR_OF_DAY, selectedTime!!.hour)
+                        cal.set(Calendar.MINUTE, selectedTime!!.minute)
+                        cal.isLenient = false
+                        Text(
+                            text = formatter.format(cal.time),
+                            fontSize = 50.sp,
+                        )
+                    } else {
+                        Text(
+                            text = "アラーム時刻を設定してください",
+                            fontSize = 30.sp,
+                        )
+                    }
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Button(
+                            onClick = {
+                                showDialWithDialogExample = true
+                                showMenu = false
+                            },
+                        ) {
+                            Text("アラーム時刻を変更")
+                        }
+                        Button(
+                            enabled = bluetoothDevice != null && selectedTime != null,
+                            onClick = { /* TODO */ },
+                        ) {
+                            Text("送信")
+                        }
+                    }
+                }
+            }
+
+            when {
+                showDialWithDialogExample -> DialWithDialog(
+                    onDismiss = {
+                        showDialWithDialogExample = false
+                        showMenu = true
+                    },
+                    onConfirm = {
+                            time ->
+                        selectedTime = time
+                        showDialWithDialogExample = false
+                        showMenu = true
+                    },
+                )
+            }
+        }
     }
 
     @Preview(showBackground = true)
