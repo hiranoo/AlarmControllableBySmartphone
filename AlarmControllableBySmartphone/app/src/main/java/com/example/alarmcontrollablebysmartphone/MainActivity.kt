@@ -241,7 +241,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun requestStatusToArduino() {
-        connectedThread?.write("Status,;".toByteArray())
+        connectedThread?.write(encodeMessage("Status", "").toByteArray())
         handler.postDelayed({
             connectedThread?.run()
         }, 7000)
@@ -253,10 +253,10 @@ class MainActivity : ComponentActivity() {
         val localTime = LocalTime.now()
         val currentMinutes = MyTime(localTime.hour, localTime.minute).toMinutes()
 
-        connectedThread?.write(("Alarm,$alarmMinutes;").toByteArray())
+        connectedThread?.write(encodeMessage("Alarm", alarmMinutes.toString()).toByteArray())
         handler.postDelayed({
-            connectedThread?.write(("Current,$currentMinutes;").toByteArray())
-        }, 1000)
+            connectedThread?.write(encodeMessage("Current", currentMinutes.toString()).toByteArray())
+        }, 500)
     }
 
     @kotlin.OptIn(ExperimentalMaterial3Api::class)
