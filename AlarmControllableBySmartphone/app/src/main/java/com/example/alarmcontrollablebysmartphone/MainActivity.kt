@@ -15,8 +15,12 @@ import androidx.annotation.OptIn
 import androidx.annotation.RequiresPermission
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -43,14 +47,7 @@ class MainActivity : ComponentActivity() {
         setupBluetooth()
         enableEdgeToEdge()
         setContent {
-            AlarmControllableBySmartphoneTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
-            }
+            UIContent()
         }
     }
 
@@ -160,20 +157,40 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+    @kotlin.OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun UIContent() {
+        AlarmControllableBySmartphoneTheme {
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                topBar = {
+                    CenterAlignedTopAppBar(
+                        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            titleContentColor = MaterialTheme.colorScheme.primary,
+                        ),
+                        title = {
+                            Text("Alarm with opening the shutter")
+                        }
+                    )
+                },
+            ) {
+                UIBody()
+            }
+        }
+    }
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    AlarmControllableBySmartphoneTheme {
-        Greeting("Android")
+    @Composable
+    fun UIBody() {
+    }
+
+    @Preview(showBackground = true)
+    @Composable
+    fun UIContentPreview() {
+        AlarmControllableBySmartphoneTheme {
+            UIContent()
+        }
     }
 }
