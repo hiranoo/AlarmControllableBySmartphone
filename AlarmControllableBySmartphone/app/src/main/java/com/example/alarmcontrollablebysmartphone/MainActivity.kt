@@ -9,6 +9,7 @@ import android.bluetooth.BluetoothSocket
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.Message
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -58,6 +59,12 @@ import java.util.Locale
 
 const val TAG = "BluetoothDebug"
 const val TARGET_DEVICE_NAME = "RNBT-C21F"
+// Defines several constants used when transmitting messages between the
+// service and the UI.
+const val MESSAGE_READ: Int = 0
+const val MESSAGE_WRITE: Int = 1
+const val MESSAGE_TOAST: Int = 2
+// ... (Add other message types here as needed.)
 
 class MainActivity : ComponentActivity() {
     lateinit var bluetoothManager: BluetoothManager
@@ -65,7 +72,20 @@ class MainActivity : ComponentActivity() {
     var bluetoothDevice: BluetoothDevice? = null
     var connectThread: ConnectThread? = null
     var connectedThread: ConnectedThread? = null
-    private val handler = Handler(Looper.getMainLooper())
+    var readMessage = ""
+    private val handler = object : Handler(Looper.getMainLooper()) {
+        override fun handleMessage(msg: Message) {
+            when(msg.what) {
+                MESSAGE_READ -> {
+                    Log.d(TAG, "handling message. msgId=${msg.what} Read, obj=${msg.obj}")
+                    readMessage = msg.obj.toString()
+                }
+                MESSAGE_WRITE -> {
+                    Log.d(TAG, "handling message. msgId=${msg.what} Write, obj=${msg.obj}")
+                }
+            }
+        }
+    }
     var messageStatus: String? = null
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
@@ -102,13 +122,24 @@ class MainActivity : ComponentActivity() {
                 device.uuids.forEach { uuid ->
                     androidx.media3.common.util.Log.d(TAG, "uuid = %s".format(uuid.uuid))
                     bluetoothDevice = device
-                    connectThread = ConnectThread(device)
-                    connectThread?.start()
+                    connectBluetooth()
                     Toast.makeText(this@MainActivity, "Bluetooth connection is being established...", Toast.LENGTH_SHORT).show()
                     return
                 }
             }
         }
+    }
+
+    private fun closeBluetooth() {
+        connectedThread?.cancel()
+        connectThread?.cancel()
+        connectedThread = null
+        connectThread = null
+    }
+
+    private fun connectBluetooth() {
+        connectThread = ConnectThread(bluetoothDevice!!)
+        connectThread?.start()
     }
 
     fun manageMyConnectedSocket(socket: BluetoothSocket) {
@@ -149,22 +180,29 @@ class MainActivity : ComponentActivity() {
     }
 
     inner class ConnectedThread(private val mmSocket: BluetoothSocket) : Thread() {
-
         private val mmInStream: InputStream = mmSocket.inputStream
         private val mmOutStream: OutputStream = mmSocket.outputStream
         private val mmBuffer: ByteArray = ByteArray(1024) // mmBuffer store for the stream
 
         override fun run() {
-            val reader = BufferedReader(mmInStream.reader())
-            var content: String
-            try {
-                Log.d(TAG,"Now reading stream...")
-                content = reader.readText()
-            } finally {
-                Log.d(TAG, "Closing reader")
-                reader.close()
+            var numBytes: Int // bytes returned from read()
+
+            // Keep listening to the InputStream until an exception occurs.
+            while (true) {
+                // Read from the InputStream.
+                numBytes = try {
+                    mmInStream.read(mmBuffer)
+                } catch (e: IOException) {
+                    Log.d(TAG, "Input stream was disconnected", e)
+                    break
+                }
+
+                // Send the obtained bytes to the UI activity.
+                val readMsg = handler.obtainMessage(
+                    MESSAGE_READ, numBytes, -1,
+                    mmBuffer.decodeToString(0, numBytes))
+                readMsg.sendToTarget()
             }
-            Log.d(TAG, content)
         }
 
         // Call this from the main activity to send data to the remote device.
@@ -174,13 +212,28 @@ class MainActivity : ComponentActivity() {
                 mmOutStream.write(bytes)
             } catch (e: IOException) {
                 Log.e(TAG, "Error occurred when sending data", e)
+
+                // Send a failure message back to the activity.
+                val writeErrorMsg = handler.obtainMessage(MESSAGE_TOAST)
+                val bundle = Bundle().apply {
+                    putString("toast", "Couldn't send data to the other device")
+                }
+                writeErrorMsg.data = bundle
+                handler.sendMessage(writeErrorMsg)
                 return
             }
+
+            // Share the sent message with the UI activity.
+            val writtenMsg = handler.obtainMessage(
+                MESSAGE_WRITE, -1, -1, bytes.decodeToString())
+            writtenMsg.sendToTarget()
         }
 
         // Call this method from the main activity to shut down the connection.
         fun cancel() {
             try {
+                mmInStream.close()
+                mmOutStream.close()
                 mmSocket.close()
             } catch (e: IOException) {
                 Log.e(TAG, "Could not close the connect socket", e)
@@ -242,26 +295,6 @@ class MainActivity : ComponentActivity() {
                 Text("Request status", fontSize = 30.sp)
             }
         }
-    }
-
-    private fun requestStatusToArduino() {
-        connectedThread?.write(encodeMessage("Status", "dummy").toByteArray())
-//        handler.postDelayed({
-//            Log.d(TAG,"start reading...")
-//            connectedThread?.start()
-//        }, 7000)
-    }
-
-    @kotlin.OptIn(ExperimentalMaterial3Api::class)
-    private fun sendTimeToArduino(time: TimePickerState) {
-        val alarmMinutes = MyTime(time.hour, time.minute).toSeconds()
-        val localTime = LocalTime.now()
-        val currentMinutes = MyTime(localTime.hour, localTime.minute).toSeconds()
-
-        connectedThread?.write(encodeMessage("Alarm", alarmMinutes.toString()).toByteArray())
-        handler.postDelayed({
-            connectedThread?.write(encodeMessage("Current", currentMinutes.toString()).toByteArray())
-        }, 500)
     }
 
     @kotlin.OptIn(ExperimentalMaterial3Api::class)
@@ -337,6 +370,32 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    private fun requestStatusToArduino() {
+        closeBluetooth()
+        connectBluetooth()
+        handler.postDelayed({
+            connectedThread?.write(encodeMessage("Status", "dummy").toByteArray())
+            Log.d(TAG,"start reading...")
+            connectedThread?.start()
+        }, 5000)
+    }
+
+    @kotlin.OptIn(ExperimentalMaterial3Api::class)
+    private fun sendTimeToArduino(time: TimePickerState) {
+        val alarmMinutes = MyTime(time.hour, time.minute).toSeconds()
+        val localTime = LocalTime.now()
+        val currentMinutes = MyTime(localTime.hour, localTime.minute).toSeconds()
+
+        connectedThread?.write(encodeMessage("Alarm", alarmMinutes.toString()).toByteArray())
+        handler.postDelayed({
+            connectedThread?.write(encodeMessage("Current", currentMinutes.toString()).toByteArray())
+        }, 500)
+    }
+
+    fun sendPushAngleToArduino(angle: Int) {
+        connectedThread?.write(encodeMessage("PushAngle", angle.toString()).toByteArray())
     }
 
     @Preview(showBackground = true)
