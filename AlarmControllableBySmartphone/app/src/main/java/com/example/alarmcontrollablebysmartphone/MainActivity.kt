@@ -379,6 +379,7 @@ class MainActivity : ComponentActivity() {
 
             when {
                 showDialWithDialogExample -> DialWithDialog(
+                    initialTime = initialTime,
                     onDismiss = {
                         showDialWithDialogExample = false
                         showMenu = true
