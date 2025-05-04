@@ -24,10 +24,11 @@ fun encodeMessage(tag: String, body: String): String {
 
 fun decodeMessage(msg: String): MutableMap<String, String> {
     val messageMap = mutableMapOf<String, String>()
-    msg.split(';').forEach {
-        if (it.length == 2) {
-            val tag = (it.split(','))[0]
-            val body = (it.split(','))[1]
+    msg.replace(" ", "").split(';').forEach {
+        val texts = it.split(',')
+        if (texts.size == 2) {
+            val tag = texts[0]
+            val body = texts[1]
             messageMap[tag] = body
         }
     }
