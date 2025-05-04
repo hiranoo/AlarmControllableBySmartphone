@@ -44,7 +44,7 @@ fun decodeMessage(msg: String): MutableMap<String, String> {
     return messageMap
 }
 
-fun getArduinoStatus(map: MutableMap<String, String>): ArduinoStatus? {
+fun getArduinoStatus(map: MutableMap<String, String>): ArduinoStatus {
     var alarmTime: ArduinoTime? = null
     var currentTime: ArduinoTime? = null
     var pushAngle: Int = -1
