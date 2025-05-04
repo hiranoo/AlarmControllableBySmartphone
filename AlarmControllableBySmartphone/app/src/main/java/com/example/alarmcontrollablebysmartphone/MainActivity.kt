@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothSocket
+import android.content.Context
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -35,6 +36,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TimePickerState
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,11 +54,13 @@ import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
+import java.sql.Time
 import java.text.SimpleDateFormat
 import java.time.LocalTime
 import java.util.Calendar
 import java.util.Locale
 
+const val STORED_ALARM_SECONDS = "STORED_ALARM_SECONDS"
 const val TAG = "BluetoothDebug"
 const val TARGET_DEVICE_NAME = "RNBT-C21F"
 // Defines several constants used when transmitting messages between the
@@ -72,6 +76,8 @@ class MainActivity : ComponentActivity() {
     var bluetoothDevice: BluetoothDevice? = null
     var connectThread: ConnectThread? = null
     var connectedThread: ConnectedThread? = null
+    @kotlin.OptIn(ExperimentalMaterial3Api::class)
+    var storedAlarmTime: TimePickerState? = null
     var arduinoStatus: ArduinoStatus? = null
     private val handler = object : Handler(Looper.getMainLooper()) {
         override fun handleMessage(msg: Message) {
@@ -92,10 +98,24 @@ class MainActivity : ComponentActivity() {
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        loadAlarmTime()
         setupBluetooth()
         enableEdgeToEdge()
         setContent {
             UIContent()
+        }
+    }
+
+    @kotlin.OptIn(ExperimentalMaterial3Api::class)
+    private fun loadAlarmTime() {
+        val sharedPref = this.getPreferences(Context.MODE_PRIVATE) ?: return
+        val alarmSeconds = sharedPref.getLong(STORED_ALARM_SECONDS, -1)
+        if (alarmSeconds != -1L) {
+            storedAlarmTime = TimePickerState(
+                initialHour = (alarmSeconds / 3600).toInt(),
+                initialMinute = ((alarmSeconds / 60) % 60).toInt(),
+                is24Hour = true,
+            )
         }
     }
 
@@ -270,7 +290,7 @@ class MainActivity : ComponentActivity() {
                 if (showArduinoStatus) {
                     ArduinoStatusView()
                 } else {
-                    AlarmView()
+                    AlarmView(initialTime = storedAlarmTime)
                 }
             }
         }
@@ -303,10 +323,10 @@ class MainActivity : ComponentActivity() {
 
     @kotlin.OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    fun AlarmView() {
+    fun AlarmView(initialTime: TimePickerState?) {
         var showMenu by remember { mutableStateOf(true) }
         var showDialWithDialogExample by remember { mutableStateOf(false) }
-        var selectedTime: TimePickerState? by remember { mutableStateOf(null) }
+        var selectedTime: TimePickerState? by remember { mutableStateOf(initialTime) }
         val formatter = remember { SimpleDateFormat("a hh:mm", Locale.getDefault()) }
 
         Box(
@@ -355,8 +375,6 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-            } else {
-
             }
 
             when {
@@ -395,12 +413,21 @@ class MainActivity : ComponentActivity() {
         val alarmSeconds = MyTime(time.hour, time.minute).toSeconds()
         val localTime = LocalTime.now()
         val currentSeconds = MyTime(localTime.hour, localTime.minute).toSeconds()
+        storeAlarmSeconds(alarmSeconds)
 
         val messageMap = mapOf(MESSAGE_ALARM_SECONDS to alarmSeconds.toString(), MESSAGE_CURRENT_SECONDS to currentSeconds.toString())
         connectedThread?.write(encodeMessage(messageMap).toByteArray())
         handler.postDelayed({
             requestStatusToArduino()
         }, 500)
+    }
+
+    private fun storeAlarmSeconds(alarmSeconds: Long) {
+        val sharedPref = this.getPreferences(Context.MODE_PRIVATE) ?: return
+        with (sharedPref.edit()) {
+            putLong(STORED_ALARM_SECONDS, alarmSeconds)
+            apply()
+        }
     }
 
     fun sendPushAngleToArduino(angle: Int) {

@@ -12,15 +12,15 @@ const val MESSAGE_PUSH_ANGLE = "PushAngle"
 const val MESSAGE_STATUS = "Status"
 
 data class MyTime(val hour: Int, val minute: Int) {
-    fun toSeconds(): Int {
-        return 3600 * hour + 60 * minute
+    fun toSeconds(): Long {
+        return 3600 * hour.toLong() + 60 * minute.toLong()
     }
 }
 
 data class ArduinoTime(val hour: Int, val minute: Int, val second: Int) {
     constructor(): this(0, -1, 0)
-    fun getTotalSeconds(): Int {
-        return 3600 * hour + 60 + minute + second
+    fun getTotalSeconds(): Long {
+        return 3600 * hour.toLong() + 60 + minute.toLong() + second.toLong()
     }
     fun display(): String {
         val a = if(hour < 12) {"午前"} else {"午後"}
