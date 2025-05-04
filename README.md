@@ -1,6 +1,8 @@
 # AlarmControllableBySmartphone
 This is an Android application.
 You can set the time you want and send it to another device via Bluetooth.
+The device is Arduino UNO & RN-42 Bluetooth module in this app, but you can use other devices.
+The source code in Arduino is not shared here.
 
 ## How to use
 1. Enable Bluetooth on your android phone.
