@@ -80,6 +80,7 @@ class MainActivity : ComponentActivity() {
                     Log.d(TAG, "handling message. msgId=${msg.what} Read, obj=${msg.obj}")
                     arduinoStatus = getArduinoStatus(decodeMessage(msg.obj.toString()))
                     Log.d(TAG, "In handler, ArduinoStatus: $arduinoStatus")
+                    Toast.makeText(this@MainActivity, "Manually refresh the view.", Toast.LENGTH_LONG).show()
                 }
                 MESSAGE_WRITE -> {
                     Log.d(TAG, "handling message. msgId=${msg.what} Write, obj=${msg.obj}")
@@ -375,6 +376,10 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /*
+    Re-connection is necessary per reading buffer to avoid the crash of the app.
+    The reason of crash is not clear.
+    */
     private fun requestStatusToArduino() {
         closeBluetooth()
         connectBluetooth()
@@ -391,9 +396,10 @@ class MainActivity : ComponentActivity() {
         val localTime = LocalTime.now()
         val currentMinutes = MyTime(localTime.hour, localTime.minute).toSeconds()
 
-        connectedThread?.write(encodeMessage("Alarm", alarmMinutes.toString()).toByteArray())
+        val messageMap = mapOf("Alarm" to alarmMinutes.toString(), "Current" to currentMinutes.toString())
+        connectedThread?.write(encodeMessage(messageMap).toByteArray())
         handler.postDelayed({
-            connectedThread?.write(encodeMessage("Current", currentMinutes.toString()).toByteArray())
+            requestStatusToArduino()
         }, 500)
     }
 

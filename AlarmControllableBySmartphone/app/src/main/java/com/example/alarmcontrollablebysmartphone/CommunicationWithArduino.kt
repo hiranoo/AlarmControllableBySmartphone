@@ -31,6 +31,14 @@ fun encodeMessage(tag: String, body: String): String {
     return "$tag,$body;"
 }
 
+fun encodeMessage(map: Map<String, String>): String {
+    var msg = ""
+    for (key in map.keys) {
+        msg += encodeMessage(key, map[key]!!)
+    }
+    return msg
+}
+
 fun decodeMessage(msg: String): MutableMap<String, String> {
     val messageMap = mutableMapOf<String, String>()
     msg.replace(" ", "").split(';').forEach {
