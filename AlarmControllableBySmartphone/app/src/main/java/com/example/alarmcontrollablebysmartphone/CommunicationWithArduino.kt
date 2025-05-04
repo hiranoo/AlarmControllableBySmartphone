@@ -6,6 +6,11 @@ import androidx.compose.material3.TimePickerState
 import java.util.Calendar
 import kotlin.math.floor
 
+const val MESSAGE_ALARM_SECONDS = "Alarm"
+const val MESSAGE_CURRENT_SECONDS = "Current"
+const val MESSAGE_PUSH_ANGLE = "PushAngle"
+const val MESSAGE_STATUS = "Status"
+
 data class MyTime(val hour: Int, val minute: Int) {
     fun toSeconds(): Int {
         return 3600 * hour + 60 * minute
@@ -58,21 +63,21 @@ fun getArduinoStatus(map: MutableMap<String, String>): ArduinoStatus {
     var pushAngle: Int = -1
     map.keys.forEach {
         when(it) {
-            "Alarm" -> {
+            MESSAGE_ALARM_SECONDS -> {
                 val totalSeconds = map[it]!!.toLong()
                 val h = (totalSeconds / 3600).toInt()
                 val m = ((totalSeconds / 60) % 60).toInt()
                 val s = (totalSeconds % 60).toInt()
                 alarmTime = ArduinoTime(h, m, s)
             }
-            "Current" -> {
+            MESSAGE_CURRENT_SECONDS -> {
                 val totalSeconds = map[it]!!.toLong()
                 val h = (totalSeconds / 3600).toInt()
                 val m = ((totalSeconds / 60) % 60).toInt()
                 val s = (totalSeconds % 60).toInt()
                 currentTime = ArduinoTime(h, m, s)
             }
-            "PushAngle" -> {
+            MESSAGE_PUSH_ANGLE -> {
                 pushAngle = map[it]!!.toInt()
             }
         }

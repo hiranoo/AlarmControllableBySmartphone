@@ -384,7 +384,7 @@ class MainActivity : ComponentActivity() {
         closeBluetooth()
         connectBluetooth()
         handler.postDelayed({
-            connectedThread?.write(encodeMessage("Status", "dummy").toByteArray())
+            connectedThread?.write(encodeMessage(MESSAGE_STATUS, "dummy").toByteArray())
             Log.d(TAG,"start reading...")
             connectedThread?.start()
         }, 5000)
@@ -392,11 +392,11 @@ class MainActivity : ComponentActivity() {
 
     @kotlin.OptIn(ExperimentalMaterial3Api::class)
     private fun sendTimeToArduino(time: TimePickerState) {
-        val alarmMinutes = MyTime(time.hour, time.minute).toSeconds()
+        val alarmSeconds = MyTime(time.hour, time.minute).toSeconds()
         val localTime = LocalTime.now()
-        val currentMinutes = MyTime(localTime.hour, localTime.minute).toSeconds()
+        val currentSeconds = MyTime(localTime.hour, localTime.minute).toSeconds()
 
-        val messageMap = mapOf("Alarm" to alarmMinutes.toString(), "Current" to currentMinutes.toString())
+        val messageMap = mapOf(MESSAGE_ALARM_SECONDS to alarmSeconds.toString(), MESSAGE_CURRENT_SECONDS to currentSeconds.toString())
         connectedThread?.write(encodeMessage(messageMap).toByteArray())
         handler.postDelayed({
             requestStatusToArduino()
@@ -404,7 +404,7 @@ class MainActivity : ComponentActivity() {
     }
 
     fun sendPushAngleToArduino(angle: Int) {
-        connectedThread?.write(encodeMessage("PushAngle", angle.toString()).toByteArray())
+        connectedThread?.write(encodeMessage(MESSAGE_PUSH_ANGLE, angle.toString()).toByteArray())
     }
 
     @Preview(showBackground = true)
