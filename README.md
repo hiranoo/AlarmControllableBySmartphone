@@ -10,6 +10,8 @@ You can set the time you want and send it to another device via Bluetooth.
 5. Relaunch this app, then you can use it.
 6. Set time in this app.
 7. Send the time via Bluetooth.
+8. if you send time, then you will receive status from arduino and can see it in the other view. Click top bar to switch views.
+9. In addition, the alarm time will be stored to local storage and reflected to the main view.
 
 ## Caution
 Bluetooth connection will be established as soon as launch of the app.
