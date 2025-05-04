@@ -72,13 +72,14 @@ class MainActivity : ComponentActivity() {
     var bluetoothDevice: BluetoothDevice? = null
     var connectThread: ConnectThread? = null
     var connectedThread: ConnectedThread? = null
-    var readMessage = ""
+    var arduinoStatus: ArduinoStatus? = null
     private val handler = object : Handler(Looper.getMainLooper()) {
         override fun handleMessage(msg: Message) {
             when(msg.what) {
                 MESSAGE_READ -> {
                     Log.d(TAG, "handling message. msgId=${msg.what} Read, obj=${msg.obj}")
-                    readMessage = msg.obj.toString()
+                    arduinoStatus = getArduinoStatus(decodeMessage(msg.obj.toString()))
+                    Log.d(TAG, "In handler, ArduinoStatus: $arduinoStatus")
                 }
                 MESSAGE_WRITE -> {
                     Log.d(TAG, "handling message. msgId=${msg.what} Write, obj=${msg.obj}")
@@ -86,7 +87,6 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-    var messageStatus: String? = null
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -284,10 +284,13 @@ class MainActivity : ComponentActivity() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceEvenly
         ) {
-            if (messageStatus == null){
+            if (arduinoStatus == null){
                 Text("No status")
             } else {
-                Text(messageStatus!!)
+                Log.d(TAG, "ArduinoStatus: $arduinoStatus")
+                Text("アラーム時刻: ${arduinoStatus?.alarmTime?.display()}")
+                Text("現在時刻: ${arduinoStatus?.currentTime?.display()}")
+                Text("押下角度： ${arduinoStatus?.pushAngle}")
             }
             Button(
                 onClick = { requestStatusToArduino() }
@@ -303,7 +306,7 @@ class MainActivity : ComponentActivity() {
         var showMenu by remember { mutableStateOf(true) }
         var showDialWithDialogExample by remember { mutableStateOf(false) }
         var selectedTime: TimePickerState? by remember { mutableStateOf(null) }
-        val formatter = remember { SimpleDateFormat("hh:mm a", Locale.getDefault()) }
+        val formatter = remember { SimpleDateFormat("a hh:mm", Locale.getDefault()) }
 
         Box(
             Modifier.fillMaxSize(),
