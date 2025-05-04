@@ -106,17 +106,21 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @kotlin.OptIn(ExperimentalMaterial3Api::class)
     private fun loadAlarmTime() {
         val sharedPref = this.getPreferences(Context.MODE_PRIVATE) ?: return
         val alarmSeconds = sharedPref.getLong(STORED_ALARM_SECONDS, -1)
         if (alarmSeconds != -1L) {
-            storedAlarmTime = TimePickerState(
-                initialHour = (alarmSeconds / 3600).toInt(),
-                initialMinute = ((alarmSeconds / 60) % 60).toInt(),
-                is24Hour = true,
-            )
+            updateStoreAlarmTime(alarmSeconds)
         }
+    }
+
+    @kotlin.OptIn(ExperimentalMaterial3Api::class)
+    private fun updateStoreAlarmTime(alarmSeconds: Long) {
+        storedAlarmTime = TimePickerState(
+            initialHour = (alarmSeconds / 3600).toInt(),
+            initialMinute = ((alarmSeconds / 60) % 60).toInt(),
+            is24Hour = true,
+        )
     }
 
     @OptIn(UnstableApi::class)
@@ -415,6 +419,7 @@ class MainActivity : ComponentActivity() {
         val localTime = LocalTime.now()
         val currentSeconds = MyTime(localTime.hour, localTime.minute).toSeconds()
         storeAlarmSeconds(alarmSeconds)
+        updateStoreAlarmTime(alarmSeconds)
 
         val messageMap = mapOf(MESSAGE_ALARM_SECONDS to alarmSeconds.toString(), MESSAGE_CURRENT_SECONDS to currentSeconds.toString())
         connectedThread?.write(encodeMessage(messageMap).toByteArray())
@@ -423,6 +428,7 @@ class MainActivity : ComponentActivity() {
         }, 500)
     }
 
+    @kotlin.OptIn(ExperimentalMaterial3Api::class)
     private fun storeAlarmSeconds(alarmSeconds: Long) {
         val sharedPref = this.getPreferences(Context.MODE_PRIVATE) ?: return
         with (sharedPref.edit()) {

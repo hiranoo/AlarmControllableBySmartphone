@@ -18,15 +18,14 @@ fun DialWithDialog(
     onConfirm: (TimePickerState) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var timePickerState: TimePickerState? = initialTime
-    if (timePickerState == null) {
-        val currentTime = Calendar.getInstance()
-        timePickerState = rememberTimePickerState(
-            initialHour = currentTime.get(Calendar.HOUR_OF_DAY),
-            initialMinute = currentTime.get(Calendar.MINUTE),
-            is24Hour = true,
-        )
-    }
+    val currentTime = Calendar.getInstance()
+    val hour = initialTime?.hour ?: currentTime.get(Calendar.HOUR_OF_DAY)
+    val minute = initialTime?.minute ?: currentTime.get(Calendar.MINUTE)
+    val timePickerState = rememberTimePickerState(
+        initialHour = hour,
+        initialMinute = minute,
+        is24Hour = true,
+    )
 
     TimePickerDialog(
         onDismiss = { onDismiss() },
